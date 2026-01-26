@@ -1,5 +1,6 @@
+import customtkinter as ctk
+from tkinter import filedialog, messagebox
 import tkinter as tk
-from tkinter import filedialog, messagebox, scrolledtext
 import os
 import re
 import base64
@@ -12,179 +13,203 @@ class MarkdownChanger:
     def __init__(self, root):
         self.root = root
         self.root.title("MarkdownChanger")
-        self.root.geometry("650x600")
-        self.root.resizable(False, False)
+        self.root.geometry("700x620")
         
-        self.selected_path = tk.StringVar()
-        self.path_type = tk.StringVar()
-        self.save_dir = tk.StringVar()
+        ctk.set_appearance_mode("light")
+        ctk.set_default_color_theme("blue")
+        
+        self.selected_path = ctk.StringVar()
+        self.path_type = ctk.StringVar()
+        self.save_dir = ctk.StringVar()
         self.processing = False
         
         self.setup_ui()
     
     def setup_ui(self):
-        main_frame = tk.Frame(self.root, bg="#f5f5f5")
-        main_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
+        main_frame = ctk.CTkFrame(self.root, fg_color="transparent")
+        main_frame.pack(fill=tk.BOTH, expand=True, padx=30, pady=25)
         
-        title_label = tk.Label(
+        title_label = ctk.CTkLabel(
             main_frame,
             text="MarkdownChanger",
-            font=("Segoe UI", 24, "bold"),
-            bg="#f5f5f5",
-            fg="#333333"
+            font=ctk.CTkFont(family="Segoe UI", size=28, weight="bold"),
+            text_color="#1a1a1a"
         )
         title_label.pack(pady=(0, 25))
         
-        path_frame = tk.Frame(main_frame, bg="#f5f5f5")
-        path_frame.pack(fill=tk.X, pady=(0, 12))
+        path_frame = ctk.CTkFrame(main_frame, fg_color="#f5f5f5", corner_radius=12)
+        path_frame.pack(fill=tk.X, pady=(0, 15))
         
-        tk.Label(
+        path_label = ctk.CTkLabel(
             path_frame,
-            text="选择文件或文件夹 (支持拖拽):",
-            font=("Segoe UI", 10),
-            bg="#f5f5f5",
-            fg="#555555"
-        ).pack(anchor=tk.W)
+            text="选择文件或文件夹",
+            font=ctk.CTkFont(family="Segoe UI", size=12, weight="normal"),
+            text_color="#555555",
+            anchor="w"
+        )
+        path_label.pack(fill=tk.X, padx=20, pady=(12, 4))
         
-        path_entry_frame = tk.Frame(path_frame, bg="#f5f5f5")
-        path_entry_frame.pack(fill=tk.X, pady=(5, 0))
+        path_entry_frame = ctk.CTkFrame(path_frame, fg_color="transparent")
+        path_entry_frame.pack(fill=tk.X, padx=20, pady=(0, 12))
         
-        tk.Entry(
+        self.path_entry = ctk.CTkEntry(
             path_entry_frame,
             textvariable=self.selected_path,
-            font=("Segoe UI", 9),
+            font=ctk.CTkFont(family="Segoe UI", size=11),
+            height=38,
+            placeholder_text="拖拽文件或文件夹到此处",
             state="readonly"
-        ).pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 10))
+        )
+        self.path_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 10))
         
-        tk.Button(
+        browse_button = ctk.CTkButton(
             path_entry_frame,
             text="浏览",
             command=self.select_path,
-            font=("Segoe UI", 9),
-            bg="#ffffff",
-            fg="#333333",
-            relief=tk.RAISED,
-            padx=15
-        ).pack(side=tk.RIGHT)
+            font=ctk.CTkFont(family="Segoe UI", size=14, weight="normal"),
+            width=80,
+            height=38,
+            fg_color="#2196F3",
+            hover_color="#1976D2",
+            corner_radius=8
+        )
+        browse_button.pack(side=tk.RIGHT)
         
-        drop_frame = tk.Frame(main_frame, bg="#e8e8e8", relief=tk.SUNKEN, bd=1)
-        drop_frame.pack(fill=tk.X, pady=(0, 12))
+        drop_frame = ctk.CTkFrame(main_frame, fg_color="#e3f2fd", corner_radius=12, border_width=2, border_color="#2196F3")
+        drop_frame.pack(fill=tk.X, pady=(0, 15))
         
-        drop_label = tk.Label(
+        drop_label = ctk.CTkLabel(
             drop_frame,
             text="拖拽文件或文件夹到此处",
-            font=("Segoe UI", 9),
-            bg="#e8e8e8",
-            fg="#888888"
+            font=ctk.CTkFont(family="Segoe UI", size=11),
+            text_color="#555555"
         )
-        drop_label.pack(pady=12)
+        drop_label.pack(pady=18)
         
-        drop_frame.drop_target_register(DND_FILES)
-        drop_frame.dnd_bind('<<Drop>>', self.on_drop)
-        drop_frame.dnd_bind('<<DragEnter>>', self.on_drag_enter)
-        drop_frame.dnd_bind('<<DragLeave>>', self.on_drag_leave)
+        self.root.drop_target_register(DND_FILES)
+        self.root.dnd_bind('<<Drop>>', self.on_drop)
+        self.root.dnd_bind('<<DragEnter>>', self.on_drag_enter)
+        self.root.dnd_bind('<<DragLeave>>', self.on_drag_leave)
         
         self.drop_label = drop_label
         self.drop_frame = drop_frame
         
-        save_dir_frame = tk.Frame(main_frame, bg="#f5f5f5")
-        save_dir_frame.pack(fill=tk.X, pady=(0, 12))
+        save_dir_frame = ctk.CTkFrame(main_frame, fg_color="#f5f5f5", corner_radius=12)
+        save_dir_frame.pack(fill=tk.X, pady=(0, 15))
         
-        tk.Label(
+        save_dir_label = ctk.CTkLabel(
             save_dir_frame,
-            text="图片保存目录 (仅用于'转为引用'模式):",
-            font=("Segoe UI", 10),
-            bg="#f5f5f5",
-            fg="#555555"
-        ).pack(anchor=tk.W)
+            text="图片保存目录 (仅用于'转为引用'模式，可不选，默认在当前目录)",
+            font=ctk.CTkFont(family="Segoe UI", size=12, weight="normal"),
+            text_color="#555555",
+            anchor="w"
+        )
+        save_dir_label.pack(fill=tk.X, padx=20, pady=(12, 4))
         
-        save_dir_entry_frame = tk.Frame(save_dir_frame, bg="#f5f5f5")
-        save_dir_entry_frame.pack(fill=tk.X, pady=(5, 0))
+        save_dir_entry_frame = ctk.CTkFrame(save_dir_frame, fg_color="transparent")
+        save_dir_entry_frame.pack(fill=tk.X, padx=20, pady=(0, 12))
         
-        tk.Entry(
+        self.save_dir_entry = ctk.CTkEntry(
             save_dir_entry_frame,
             textvariable=self.save_dir,
-            font=("Segoe UI", 9),
+            font=ctk.CTkFont(family="Segoe UI", size=11),
+            height=38,
+            placeholder_text="选择图片保存目录",
             state="readonly"
-        ).pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 10))
+        )
+        self.save_dir_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 10))
         
-        tk.Button(
+        save_dir_button = ctk.CTkButton(
             save_dir_entry_frame,
             text="浏览",
             command=self.select_save_dir,
-            font=("Segoe UI", 9),
-            bg="#ffffff",
-            fg="#333333",
-            relief=tk.RAISED,
-            padx=15
-        ).pack(side=tk.RIGHT)
-        
-        self.log_text = scrolledtext.ScrolledText(
-            main_frame,
-            height=10,
-            font=("Consolas", 9),
-            bg="#ffffff",
-            fg="#333333",
-            relief=tk.SUNKEN,
-            padx=10,
-            pady=10
+            font=ctk.CTkFont(family="Segoe UI", size=14, weight="normal"),
+            width=80,
+            height=38,
+            fg_color="#2196F3",
+            hover_color="#1976D2",
+            corner_radius=8
         )
-        self.log_text.pack(fill=tk.BOTH, expand=True, pady=(0, 12))
+        save_dir_button.pack(side=tk.RIGHT)
         
-        button_frame = tk.Frame(main_frame, bg="#f5f5f5")
+        log_frame = ctk.CTkFrame(main_frame, fg_color="#ffffff", corner_radius=12, border_width=1, border_color="#e0e0e0")
+        log_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 18))
+        
+        log_label = ctk.CTkLabel(
+            log_frame,
+            text="处理日志",
+            font=ctk.CTkFont(family="Segoe UI", size=11, weight="bold"),
+            text_color="#333333",
+            anchor="w"
+        )
+        log_label.pack(fill=tk.X, padx=15, pady=(10, 6))
+        
+        self.log_text = tk.Text(
+            log_frame,
+            height=6,
+            font=("Consolas", 9),
+            bg="#fafafa",
+            fg="#333333",
+            relief=tk.FLAT,
+            padx=15,
+            pady=8,
+            wrap=tk.WORD
+        )
+        self.log_text.pack(fill=tk.BOTH, expand=True, padx=15, pady=(0, 12))
+        
+        button_frame = ctk.CTkFrame(main_frame, fg_color="transparent")
         button_frame.pack(fill=tk.X)
         
-        self.to_base64_button = tk.Button(
+        self.to_base64_button = ctk.CTkButton(
             button_frame,
-            text="转为Base64",
+            text="转为 Base64",
             command=lambda: self.start_conversion("to_base64"),
-            font=("Segoe UI", 11, "bold"),
-            bg="#4CAF50",
-            fg="#ffffff",
-            relief=tk.RAISED,
-            padx=25,
-            pady=8,
-            cursor="hand2"
+            font=ctk.CTkFont(family="Segoe UI", size=12, weight="bold"),
+            width=180,
+            height=44,
+            fg_color="#4CAF50",
+            hover_color="#43A047",
+            corner_radius=12
         )
         self.to_base64_button.pack(side=tk.RIGHT, padx=(10, 0))
         
-        self.to_ref_button = tk.Button(
+        self.to_ref_button = ctk.CTkButton(
             button_frame,
             text="转为引用",
             command=lambda: self.start_conversion("to_ref"),
-            font=("Segoe UI", 11, "bold"),
-            bg="#2196F3",
-            fg="#ffffff",
-            relief=tk.RAISED,
-            padx=25,
-            pady=8,
-            cursor="hand2"
+            font=ctk.CTkFont(family="Segoe UI", size=12, weight="bold"),
+            width=180,
+            height=44,
+            fg_color="#2196F3",
+            hover_color="#1976D2",
+            corner_radius=12
         )
         self.to_ref_button.pack(side=tk.RIGHT)
         
-        tk.Button(
+        clear_button = ctk.CTkButton(
             button_frame,
             text="清空日志",
             command=self.clear_log,
-            font=("Segoe UI", 9),
-            bg="#ffffff",
-            fg="#333333",
-            relief=tk.RAISED,
-            padx=15,
-            pady=5
-        ).pack(side=tk.RIGHT, padx=(0, 10))
+            font=ctk.CTkFont(family="Segoe UI", size=11, weight="normal"),
+            width=90,
+            height=44,
+            fg_color="#757575",
+            hover_color="#616161",
+            corner_radius=12
+        )
+        clear_button.pack(side=tk.RIGHT, padx=(0, 12))
     
     def on_drag_enter(self, event):
-        self.drop_frame.config(bg="#d0e0d0")
-        self.drop_label.config(bg="#d0e0d0", fg="#4CAF50", text="释放以添加")
+        self.drop_frame.configure(fg_color="#c8e6c9", border_color="#4CAF50")
+        self.drop_label.configure(text="释放以添加", text_color="#2E7D32")
     
     def on_drag_leave(self, event):
-        self.drop_frame.config(bg="#e8e8e8")
-        self.drop_label.config(bg="#e8e8e8", fg="#888888", text="拖拽文件或文件夹到此处")
+        self.drop_frame.configure(fg_color="#e3f2fd", border_color="#2196F3")
+        self.drop_label.configure(text="拖拽文件或文件夹到此处", text_color="#555555")
     
     def on_drop(self, event):
-        self.drop_frame.config(bg="#e8e8e8")
-        self.drop_label.config(bg="#e8e8e8", fg="#888888", text="拖拽文件或文件夹到此处")
+        self.drop_frame.configure(fg_color="#e3f2fd", border_color="#2196F3")
+        self.drop_label.configure(text="拖拽文件或文件夹到此处", text_color="#555555")
         
         files = self.root.tk.splitlist(event.data)
         if files:
@@ -436,8 +461,8 @@ class MarkdownChanger:
                 self.log("提示: 未指定保存目录，将使用Markdown文件所在目录")
         
         self.processing = True
-        self.to_base64_button.config(state=tk.DISABLED, bg="#cccccc")
-        self.to_ref_button.config(state=tk.DISABLED, bg="#cccccc")
+        self.to_base64_button.configure(state=tk.DISABLED)
+        self.to_ref_button.configure(state=tk.DISABLED)
         self.clear_log()
         
         mode_name = "转为Base64" if mode == "to_base64" else "转为引用"
@@ -502,8 +527,8 @@ class MarkdownChanger:
         
         finally:
             self.processing = False
-            self.to_base64_button.config(state=tk.NORMAL, bg="#4CAF50")
-            self.to_ref_button.config(state=tk.NORMAL, bg="#2196F3")
+            self.to_base64_button.configure(state=tk.NORMAL)
+            self.to_ref_button.configure(state=tk.NORMAL)
 
 
 def main():
