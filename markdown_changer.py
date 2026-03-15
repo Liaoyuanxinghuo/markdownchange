@@ -416,13 +416,13 @@ class MarkdownChanger:
                 try:
                     success, final_image_path = self.base64_to_image(base64_data, image_path)
                     if success:
-                        rel_path = os.path.relpath(final_image_path, os.path.dirname(md_file_path))
-                        rel_path = rel_path.replace('\\', '/')
+                        # 使用绝对路径，将反斜杠替换为正斜杠
+                        abs_path = final_image_path.replace('\\', '/')
                         
                         escaped_alt = re.escape(alt_text)
                         escaped_base64 = re.escape(base64_data)
                         old_pattern = f'!\\[{escaped_alt}\\]\\({escaped_base64}\\)'
-                        new_pattern = f'![{alt_text}]({rel_path})'
+                        new_pattern = f'![{alt_text}]({abs_path})'
                         content = re.sub(old_pattern, new_pattern, content)
                         
                         self.log(f"  已提取: {final_image_path}")
